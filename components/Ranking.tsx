@@ -182,9 +182,9 @@ export default function Ranking() {
 
                     {/* EVOLUÇÃO */}
                     <td className="py-4 px-6 text-center">
-                      {student.trend === 'up' && <TrendingUp size={18} className="inline text-green-500" title="Subiu na classificação" />}
-                      {student.trend === 'down' && <TrendingDown size={18} className="inline text-red-500" title="Caiu na classificação" />}
-                      {student.trend === 'same' && <Minus size={18} className="inline text-gray-400" title="Manteve posição" />}
+                      {student.trend === 'up' && <TrendingUp size={18} className="inline text-green-500" />}
+                      {student.trend === 'down' && <TrendingDown size={18} className="inline text-red-500" />}
+                      {student.trend === 'same' && <Minus size={18} className="inline text-gray-400" />}
                     </td>
 
                     {/* NOTA MATÉRIA */}
