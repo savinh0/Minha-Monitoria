@@ -1,13 +1,14 @@
 "use client";
 import React, { useState } from 'react';
 import { Discipline, CandidateSubmission } from '@/lib/store';
-import { X, UserCheck, Calculator, EyeOff, CheckCircle2, AlertTriangle, ShieldCheck } from 'lucide-react';
+import { X, Calculator, EyeOff, CheckCircle2, AlertTriangle, ShieldCheck } from 'lucide-react';
 
 interface StudentFormModalProps {
   isOpen: boolean;
   onClose: () => void;
   disciplines: Discipline[];
   defaultDisciplineId?: string;
+  userEmail: string | null;
   onSubmitScore: (submission: Omit<CandidateSubmission, 'id' | 'trend' | 'submittedAt'>) => void;
 }
 
@@ -16,54 +17,100 @@ export default function StudentFormModal({
   onClose,
   disciplines,
   defaultDisciplineId,
+  userEmail,
   onSubmitScore,
 }: StudentFormModalProps) {
   const [disciplineId, setDisciplineId] = useState('');
-  const [candidateName, setCandidateName] = useState('');
   const [isAnonymous, setIsAnonymous] = useState(false);
   const [subjectScore, setSubjectScore] = useState<string>('9.0');
-  const [ira, setIra] = useState<string>('9.0');
+  const [ira, setIra] = useState<string>('9.0000');
   const [modalityPreference, setModalityPreference] = useState<'remunerada' | 'voluntaria' | 'ambas'>('ambas');
+  const [errorMsg, setErrorMsg] = useState<string | null>(null);
+  const [showConfirm, setShowConfirm] = useState(false);
 
   React.useEffect(() => {
     if (isOpen) {
       setDisciplineId(defaultDisciplineId || disciplines[0]?.id || '');
-      setCandidateName('');
       setIsAnonymous(false);
       setSubjectScore('9.0');
-      setIra('9.0');
+      setIra('9.0000');
       setModalityPreference('ambas');
+      setErrorMsg(null);
+      setShowConfirm(false);
     }
   }, [isOpen, defaultDisciplineId, disciplines]);
 
   if (!isOpen) return null;
 
-  const numSubject = Math.min(10, Math.max(0, parseFloat(subjectScore) || 0));
-  const numIra = Math.min(10, Math.max(0, parseFloat(ira) || 0));
-  const calculatedFinalScore = numSubject + numIra;
+  // Extrair nome do e-mail
+  const candidateBaseName = userEmail ? userEmail.split('@')[0] : 'Desconhecido';
+  const finalCandidateName = isAnonymous ? 'Candidato Anônimo' : candidateBaseName;
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const validateInputs = () => {
+    // 1. Limites 0-10
+    const numSubj = parseFloat(subjectScore.replace(',', '.'));
+    const numIra = parseFloat(ira.replace(',', '.'));
+    if (isNaN(numSubj) || numSubj < 0 || numSubj > 10) return "Nota da matéria deve estar entre 0 e 10.";
+    if (isNaN(numIra) || numIra < 0 || numIra > 10) return "IRA deve estar entre 0 e 10.";
+
+    // 2. 4 casas decimais obrigatórias no IRA
+    // Aceita coisas como "9.1234" ou "10.0000"
+    const iraRegex = /^([0-9]|10)[.,][0-9]{4}$/;
+    if (!iraRegex.test(ira)) {
+      return "O IRA deve possuir OBRIGATORIAMENTE 4 casas decimais (Ex: 9.1234 ou 9,1234).";
+    }
+
+    // 3. Consistência de vírgula/ponto
+    const hasCommaSubj = subjectScore.includes(',');
+    const hasCommaIra = ira.includes(',');
+    const hasDotSubj = subjectScore.includes('.');
+    const hasDotIra = ira.includes('.');
+
+    if ((hasCommaSubj && hasDotIra) || (hasDotSubj && hasCommaIra)) {
+      return "Use o mesmo separador decimal para a Nota e para o IRA (ou ambos com ponto, ou ambos com vírgula).";
+    }
+
+    return null;
+  };
+
+  const handleFirstSubmit = (e: React.FormEvent) => {
     e.preventDefault();
+    const err = validateInputs();
+    if (err) {
+      setErrorMsg(err);
+      return;
+    }
+    setErrorMsg(null);
+    setShowConfirm(true);
+  };
+
+  const handleFinalSubmit = () => {
     if (!disciplineId) return;
+
+    const numSubj = parseFloat(subjectScore.replace(',', '.'));
+    const numIra = parseFloat(ira.replace(',', '.'));
 
     onSubmitScore({
       disciplineId,
-      candidateName: isAnonymous ? 'Candidato Anônimo' : candidateName.trim() || 'Candidato Anônimo',
+      candidateName: finalCandidateName,
       isAnonymous,
-      subjectScore: numSubject,
+      subjectScore: numSubj,
       ira: numIra,
-      finalScore: calculatedFinalScore,
+      finalScore: numSubj + numIra,
       modalityPreference,
     });
 
     onClose();
   };
 
+  const parsedSubject = parseFloat(subjectScore.replace(',', '.')) || 0;
+  const parsedIra = parseFloat(ira.replace(',', '.')) || 0;
+  const calculatedFinalScore = parsedSubject + parsedIra;
+
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm p-4 animate-in fade-in duration-200">
       <div className="bg-white rounded-2xl shadow-2xl max-w-lg w-full overflow-hidden border border-gray-100">
         
-        {/* HEADER */}
         <div className="bg-sisuBlue text-white p-6 relative">
           <button 
             onClick={onClose}
@@ -82,160 +129,180 @@ export default function StudentFormModal({
           </div>
         </div>
 
-        {/* FORM */}
-        <form onSubmit={handleSubmit} className="p-6 space-y-4">
-          
-          {/* SELEÇÃO DA DISCIPLINA */}
-          <div>
-            <label className="block text-xs font-bold uppercase tracking-wider text-gray-700 mb-1">
-              Selecione a Disciplina da Monitoria
-            </label>
-            <select
-              value={disciplineId}
-              onChange={(e) => setDisciplineId(e.target.value)}
-              className="w-full px-3 py-2.5 bg-gray-50 border border-gray-300 rounded-lg text-sm text-gray-900 font-medium focus:outline-none focus:ring-2 focus:ring-sisuBlue/50"
-            >
-              {disciplines.map(d => (
-                <option key={d.id} value={d.id}>
-                  {d.name} ({d.course}) — {d.vagasRemuneradas} Remunerada(s) / {d.vagasVoluntarias} Voluntária(s)
-                </option>
-              ))}
-            </select>
-          </div>
-
-          {/* NOME E OPÇÃO DE ANÔNIMO */}
-          <div>
-            <div className="flex justify-between items-center mb-1">
-              <label className="block text-xs font-bold uppercase tracking-wider text-gray-700">
-                Seu Nome (Visível na lista)
+        {!showConfirm ? (
+          <form onSubmit={handleFirstSubmit} className="p-6 space-y-4">
+            
+            <div>
+              <label className="block text-xs font-bold uppercase tracking-wider text-gray-700 mb-1">
+                Selecione a Disciplina da Monitoria
               </label>
-              <label className="flex items-center gap-1.5 cursor-pointer text-xs font-semibold text-gray-600">
+              <select
+                value={disciplineId}
+                onChange={(e) => setDisciplineId(e.target.value)}
+                className="w-full px-3 py-2.5 bg-gray-50 border border-gray-300 rounded-lg text-sm text-gray-900 font-medium focus:outline-none focus:ring-2 focus:ring-sisuBlue/50"
+              >
+                {disciplines.map(d => (
+                  <option key={d.id} value={d.id}>
+                    {d.name} ({d.course}) — {d.vagasRemuneradas} Rem. / {d.vagasVoluntarias} Vol.
+                  </option>
+                ))}
+              </select>
+            </div>
+
+            <div>
+              <div className="flex justify-between items-center mb-1">
+                <label className="block text-xs font-bold uppercase tracking-wider text-gray-700">
+                  Sua Identidade
+                </label>
+                <label className="flex items-center gap-1.5 cursor-pointer text-xs font-semibold text-gray-600">
+                  <input
+                    type="checkbox"
+                    checked={isAnonymous}
+                    onChange={(e) => setIsAnonymous(e.target.checked)}
+                    className="rounded border-gray-300 text-sisuBlue focus:ring-sisuBlue"
+                  />
+                  <EyeOff size={14} className="text-gray-500" /> Manter-se Anônimo
+                </label>
+              </div>
+              <div className="w-full px-3 py-2.5 border rounded-lg text-sm bg-gray-100 text-gray-500 border-gray-200 cursor-not-allowed flex items-center">
+                {finalCandidateName} <span className="ml-2 text-xs opacity-70">({userEmail})</span>
+              </div>
+            </div>
+
+            <div className="grid grid-cols-2 gap-4">
+              <div>
+                <label className="block text-xs font-bold uppercase tracking-wider text-gray-700 mb-1">
+                  Nota na Matéria
+                </label>
                 <input
-                  type="checkbox"
-                  checked={isAnonymous}
-                  onChange={(e) => setIsAnonymous(e.target.checked)}
-                  className="rounded border-gray-300 text-sisuBlue focus:ring-sisuBlue"
+                  type="text"
+                  value={subjectScore}
+                  onChange={(e) => setSubjectScore(e.target.value)}
+                  placeholder="Ex: 9.5"
+                  required
+                  className="w-full px-3 py-2.5 bg-gray-50 border border-gray-300 rounded-lg text-sm text-gray-900 font-bold focus:outline-none focus:ring-2 focus:ring-sisuBlue/50"
                 />
-                <EyeOff size={14} className="text-gray-500" /> Manter-se Anônimo
-              </label>
-            </div>
-            <input
-              type="text"
-              placeholder={isAnonymous ? "Sua identidade será oculta como 'Candidato Anônimo'" : "Ex: Sávio ou João da Silva"}
-              value={candidateName}
-              onChange={(e) => setCandidateName(e.target.value)}
-              disabled={isAnonymous}
-              className={`w-full px-3 py-2.5 border rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-sisuBlue/50 ${
-                isAnonymous ? 'bg-gray-100 text-gray-400 border-gray-200' : 'bg-gray-50 border-gray-300 text-gray-900'
-              }`}
-            />
-          </div>
+              </div>
 
-          {/* NOTAS: MATÉRIA E IRA */}
-          <div className="grid grid-cols-2 gap-4">
-            <div>
-              <label className="block text-xs font-bold uppercase tracking-wider text-gray-700 mb-1">
-                Nota na Matéria (0 a 10)
-              </label>
-              <input
-                type="number"
-                step="0.1"
-                min="0"
-                max="10"
-                value={subjectScore}
-                onChange={(e) => setSubjectScore(e.target.value)}
-                required
-                className="w-full px-3 py-2.5 bg-gray-50 border border-gray-300 rounded-lg text-sm text-gray-900 font-bold focus:outline-none focus:ring-2 focus:ring-sisuBlue/50"
-              />
+              <div>
+                <label className="block text-xs font-bold uppercase tracking-wider text-gray-700 mb-1">
+                  Seu IRA (4 casas)
+                </label>
+                <input
+                  type="text"
+                  value={ira}
+                  onChange={(e) => setIra(e.target.value)}
+                  placeholder="Ex: 9.1234"
+                  required
+                  className="w-full px-3 py-2.5 bg-gray-50 border border-gray-300 rounded-lg text-sm text-gray-900 font-bold focus:outline-none focus:ring-2 focus:ring-sisuBlue/50"
+                />
+              </div>
             </div>
 
             <div>
               <label className="block text-xs font-bold uppercase tracking-wider text-gray-700 mb-1">
-                Seu IRA (0 a 10)
+                Preferência de Vaga
               </label>
-              <input
-                type="number"
-                step="0.1"
-                min="0"
-                max="10"
-                value={ira}
-                onChange={(e) => setIra(e.target.value)}
-                required
-                className="w-full px-3 py-2.5 bg-gray-50 border border-gray-300 rounded-lg text-sm text-gray-900 font-bold focus:outline-none focus:ring-2 focus:ring-sisuBlue/50"
-              />
+              <div className="grid grid-cols-3 gap-2 text-xs font-semibold">
+                <button
+                  type="button"
+                  onClick={() => setModalityPreference('remunerada')}
+                  className={`py-2 px-2 rounded-lg border text-center transition-all ${
+                    modalityPreference === 'remunerada' ? 'bg-emerald-50 border-emerald-500 text-emerald-800 font-bold' : 'bg-gray-50 border-gray-200 text-gray-600'
+                  }`}
+                >
+                  Apenas Remunerada
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setModalityPreference('voluntaria')}
+                  className={`py-2 px-2 rounded-lg border text-center transition-all ${
+                    modalityPreference === 'voluntaria' ? 'bg-amber-50 border-amber-500 text-amber-800 font-bold' : 'bg-gray-50 border-gray-200 text-gray-600'
+                  }`}
+                >
+                  Apenas Voluntária
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setModalityPreference('ambas')}
+                  className={`py-2 px-2 rounded-lg border text-center transition-all ${
+                    modalityPreference === 'ambas' ? 'bg-blue-50 border-blue-500 text-blue-800 font-bold' : 'bg-gray-50 border-gray-200 text-gray-600'
+                  }`}
+                >
+                  Ambas
+                </button>
+              </div>
             </div>
-          </div>
 
-          {/* PREFERÊNCIA DE MODALIDADE */}
-          <div>
-            <label className="block text-xs font-bold uppercase tracking-wider text-gray-700 mb-1">
-              Preferência de Vaga
-            </label>
-            <div className="grid grid-cols-3 gap-2 text-xs font-semibold">
+            <div className="bg-gradient-to-r from-blue-50 to-indigo-50 border border-blue-200 p-4 rounded-xl flex items-center justify-between">
+              <div>
+                <span className="text-xs font-bold uppercase tracking-wider text-blue-600">Sua Nota Final Simulação</span>
+                <p className="text-xs text-gray-500">Média ({parsedSubject.toFixed(1)}) + IRA ({parsedIra.toFixed(4)})</p>
+              </div>
+              <div className="text-right">
+                <span className="text-3xl font-extrabold text-sisuBlue">{calculatedFinalScore.toFixed(4)}</span>
+                <span className="text-xs text-gray-500 font-medium ml-1">/ 20</span>
+              </div>
+            </div>
+
+            {errorMsg && (
+              <div className="p-3 bg-red-50 border border-red-200 text-red-700 text-xs font-bold rounded-xl flex items-start gap-2">
+                <AlertTriangle size={16} className="flex-shrink-0" />
+                <p>{errorMsg}</p>
+              </div>
+            )}
+
+            <div className="flex justify-end gap-3 pt-2">
               <button
                 type="button"
-                onClick={() => setModalityPreference('remunerada')}
-                className={`py-2 px-2 rounded-lg border text-center transition-all ${
-                  modalityPreference === 'remunerada' ? 'bg-emerald-50 border-emerald-500 text-emerald-800 font-bold' : 'bg-gray-50 border-gray-200 text-gray-600'
-                }`}
+                onClick={onClose}
+                className="px-4 py-2 text-sm font-medium text-gray-600 hover:bg-gray-100 rounded-lg transition-colors"
               >
-                Apenas Remunerada
+                Cancelar
               </button>
               <button
-                type="button"
-                onClick={() => setModalityPreference('voluntaria')}
-                className={`py-2 px-2 rounded-lg border text-center transition-all ${
-                  modalityPreference === 'voluntaria' ? 'bg-amber-50 border-amber-500 text-amber-800 font-bold' : 'bg-gray-50 border-gray-200 text-gray-600'
-                }`}
+                type="submit"
+                className="px-6 py-2.5 text-sm font-bold text-white bg-sisuBlue hover:bg-blue-700 rounded-lg shadow-md hover:shadow-lg transition-all"
               >
-                Apenas Voluntária
+                Revisar Envio
+              </button>
+            </div>
+          </form>
+        ) : (
+          <div className="p-6 space-y-6">
+            <div className="bg-amber-50 border border-amber-200 rounded-xl p-4 flex gap-3">
+              <AlertTriangle className="text-amber-600 flex-shrink-0" size={24} />
+              <div>
+                <h4 className="text-amber-900 font-bold text-sm uppercase tracking-wider">Dupla Verificação: IRA Imutável</h4>
+                <p className="text-amber-800 text-xs mt-1 leading-relaxed">
+                  Confirme com atenção as suas notas. Você poderá atualizar a nota da matéria depois se tiver errado, <strong>mas o valor do IRA não poderá ser alterado NUNCA MAIS no sistema</strong> após o primeiro envio.
+                </p>
+              </div>
+            </div>
+
+            <div className="space-y-2 text-sm text-gray-800 bg-gray-50 p-4 rounded-xl border border-gray-200">
+              <p><strong>Identidade:</strong> {finalCandidateName}</p>
+              <p><strong>Nota na Matéria:</strong> {subjectScore}</p>
+              <p><strong>IRA:</strong> {ira}</p>
+              <p><strong>Modalidade:</strong> {modalityPreference}</p>
+            </div>
+
+            <div className="flex justify-end gap-3">
+              <button
+                onClick={() => setShowConfirm(false)}
+                className="px-4 py-2 text-sm font-medium text-gray-600 border border-gray-300 hover:bg-gray-100 rounded-lg transition-colors"
+              >
+                Voltar e Corrigir
               </button>
               <button
-                type="button"
-                onClick={() => setModalityPreference('ambas')}
-                className={`py-2 px-2 rounded-lg border text-center transition-all ${
-                  modalityPreference === 'ambas' ? 'bg-blue-50 border-blue-500 text-blue-800 font-bold' : 'bg-gray-50 border-gray-200 text-gray-600'
-                }`}
+                onClick={handleFinalSubmit}
+                className="px-6 py-2.5 text-sm font-bold text-white bg-sisuBlue hover:bg-blue-700 rounded-lg shadow-md hover:shadow-lg transition-all flex items-center gap-2"
               >
-                Ambas (Qualquer uma)
+                <CheckCircle2 size={16} /> Confirmar e Enviar Definitivo
               </button>
             </div>
           </div>
-
-          {/* DISPLAY DA NOTA FINAL CALCULADA */}
-          <div className="bg-gradient-to-r from-blue-50 to-indigo-50 border border-blue-200 p-4 rounded-xl flex items-center justify-between">
-            <div>
-              <span className="text-xs font-bold uppercase tracking-wider text-blue-600">Sua Nota Final Simulação</span>
-              <p className="text-xs text-gray-500">Média ({numSubject.toFixed(1)}) + IRA ({numIra.toFixed(1)})</p>
-            </div>
-            <div className="text-right">
-              <span className="text-3xl font-extrabold text-sisuBlue">{calculatedFinalScore.toFixed(2)}</span>
-              <span className="text-xs text-gray-500 font-medium ml-1">/ 20.0</span>
-            </div>
-          </div>
-
-          {/* DISCLAIMER NO MODAL */}
-          <p className="text-[11px] text-gray-500 flex items-start gap-1">
-            <ShieldCheck size={14} className="text-green-600 flex-shrink-0 mt-0.5" />
-            Dados protegidos por criptografia de controle dual. Esta simulação é não-oficial e mantida pelos alunos.
-          </p>
-
-          <div className="flex justify-end gap-3 pt-2">
-            <button
-              type="button"
-              onClick={onClose}
-              className="px-4 py-2 text-sm font-medium text-gray-600 hover:bg-gray-100 rounded-lg transition-colors"
-            >
-              Cancelar
-            </button>
-            <button
-              type="submit"
-              className="px-6 py-2.5 text-sm font-bold text-white bg-sisuBlue hover:bg-blue-700 rounded-lg shadow-md hover:shadow-lg transition-all flex items-center gap-2"
-            >
-              <CheckCircle2 size={16} /> Enviar Minha Nota
-            </button>
-          </div>
-        </form>
+        )}
       </div>
     </div>
   );
