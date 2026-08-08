@@ -18,12 +18,23 @@ export default function StudentFormModal({
   defaultDisciplineId,
   onSubmitScore,
 }: StudentFormModalProps) {
-  const [disciplineId, setDisciplineId] = useState(defaultDisciplineId || disciplines[0]?.id || '');
+  const [disciplineId, setDisciplineId] = useState('');
   const [candidateName, setCandidateName] = useState('');
   const [isAnonymous, setIsAnonymous] = useState(false);
   const [subjectScore, setSubjectScore] = useState<string>('9.0');
   const [ira, setIra] = useState<string>('9.0');
   const [modalityPreference, setModalityPreference] = useState<'remunerada' | 'voluntaria' | 'ambas'>('ambas');
+
+  React.useEffect(() => {
+    if (isOpen) {
+      setDisciplineId(defaultDisciplineId || disciplines[0]?.id || '');
+      setCandidateName('');
+      setIsAnonymous(false);
+      setSubjectScore('9.0');
+      setIra('9.0');
+      setModalityPreference('ambas');
+    }
+  }, [isOpen, defaultDisciplineId, disciplines]);
 
   if (!isOpen) return null;
 
