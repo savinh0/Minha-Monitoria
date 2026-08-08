@@ -16,7 +16,7 @@ export interface CandidateSubmission {
   subjectScore: number;
   ira: number;
   finalScore: number;
-  modalityPreference: 'remunerada' | 'voluntaria' | 'ambas';
+  modalityPreference: 'remunerada' | 'voluntaria';
   trend: 'up' | 'down' | 'same';
   submittedAt: string;
 }

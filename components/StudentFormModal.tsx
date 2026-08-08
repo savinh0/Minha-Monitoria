@@ -24,7 +24,7 @@ export default function StudentFormModal({
   const [isAnonymous, setIsAnonymous] = useState(false);
   const [subjectScore, setSubjectScore] = useState<string>('9.0');
   const [ira, setIra] = useState<string>('9.0000');
-  const [modalityPreference, setModalityPreference] = useState<'remunerada' | 'voluntaria' | 'ambas'>('ambas');
+  const [modalityPreference, setModalityPreference] = useState<'remunerada' | 'voluntaria'>('remunerada');
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
   const [showConfirm, setShowConfirm] = useState(false);
 
@@ -34,7 +34,7 @@ export default function StudentFormModal({
       setIsAnonymous(false);
       setSubjectScore('9.0');
       setIra('9.0000');
-      setModalityPreference('ambas');
+      setModalityPreference('remunerada');
       setErrorMsg(null);
       setShowConfirm(false);
     }
@@ -203,7 +203,7 @@ export default function StudentFormModal({
               <label className="block text-xs font-bold uppercase tracking-wider text-gray-700 mb-1">
                 Preferência de Vaga
               </label>
-              <div className="grid grid-cols-3 gap-2 text-xs font-semibold">
+              <div className="grid grid-cols-2 gap-2 text-xs font-semibold">
                 <button
                   type="button"
                   onClick={() => setModalityPreference('remunerada')}
@@ -221,15 +221,6 @@ export default function StudentFormModal({
                   }`}
                 >
                   Apenas Voluntária
-                </button>
-                <button
-                  type="button"
-                  onClick={() => setModalityPreference('ambas')}
-                  className={`py-2 px-2 rounded-lg border text-center transition-all ${
-                    modalityPreference === 'ambas' ? 'bg-blue-50 border-blue-500 text-blue-800 font-bold' : 'bg-gray-50 border-gray-200 text-gray-600'
-                  }`}
-                >
-                  Ambas
                 </button>
               </div>
             </div>
