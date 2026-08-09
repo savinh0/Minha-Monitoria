@@ -161,7 +161,9 @@ export default function Home() {
         return;
       }
       if (data) {
-        alert("Oh, você colocou para tal monitoria! Pode editar a modalidade se quiser, a última é a que vale, mas a parcial só vai sair no próximo horário de atualização de hoje.");
+        const discName = disciplines.find(d => d.id === subData.disciplineId)?.name || 'a monitoria';
+        const modName = subData.modalityPreference === 'remunerada' ? 'Remunerada' : 'Voluntária';
+        alert(`Sua simulação para ${discName} (Vaga ${modName}) foi salva!\nVocê pode editar a modalidade depois se quiser, a última é a que vale. No entanto, sua posição parcial só será atualizada no próximo horário de corte de hoje.`);
         const updatedSub: CandidateSubmission = {
           ...existing,
           ...subData,
@@ -187,7 +189,9 @@ export default function Home() {
       }
       
       if (data) {
-        alert("Oh, você colocou para tal monitoria! Pode editar a modalidade se quiser, a última é a que vale, mas a parcial só vai sair no próximo horário de atualização de hoje.");
+        const discName = disciplines.find(d => d.id === subData.disciplineId)?.name || 'a monitoria';
+        const modName = subData.modalityPreference === 'remunerada' ? 'Remunerada' : 'Voluntária';
+        alert(`Sua simulação para ${discName} (Vaga ${modName}) foi salva!\nVocê pode editar a modalidade depois se quiser, a última é a que vale. No entanto, sua posição parcial só será atualizada no próximo horário de corte de hoje.`);
         const newSub: CandidateSubmission = {
           ...subData,
           id: data[0].id,

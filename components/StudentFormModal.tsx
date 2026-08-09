@@ -320,15 +320,34 @@ export default function StudentFormModal({
           </form>
         ) : (
           <div className="p-6 space-y-6">
-            <div className="bg-amber-50 border border-amber-200 rounded-xl p-4 flex gap-3">
-              <AlertTriangle className="text-amber-600 flex-shrink-0" size={24} />
-              <div>
-                <h4 className="text-amber-900 font-bold text-sm uppercase tracking-wider">Dupla Verificação: IRA Imutável</h4>
-                <p className="text-amber-800 text-xs mt-1 leading-relaxed">
-                  Confirme com atenção as suas notas. <strong>A sua Nota da Matéria e o valor do seu IRA não poderão ser alterados em hipótese alguma</strong> após o primeiro envio. Apenas a modalidade poderá ser trocada.
-                </p>
+            {(!isSubjectLocked || !isIraLocked) && (
+              <div className="bg-amber-50 border border-amber-200 rounded-xl p-4 flex gap-3">
+                <AlertTriangle className="text-amber-600 flex-shrink-0" size={24} />
+                <div>
+                  <h4 className="text-amber-900 font-bold text-sm uppercase tracking-wider">Aviso: Envio Definitivo</h4>
+                  <p className="text-amber-800 text-xs mt-1 leading-relaxed">
+                    Confirme com atenção as suas notas. {' '}
+                    {!isSubjectLocked && !isIraLocked && (
+                      <strong>A sua Nota da Matéria e o seu IRA não poderão ser alterados em hipótese alguma após o envio.</strong>
+                    )}
+                    {!isSubjectLocked && isIraLocked && (
+                      <strong>A sua Nota da Matéria não poderá ser alterada em hipótese alguma após o envio.</strong>
+                    )}
+                    {' '}Apenas a modalidade poderá ser trocada depois.
+                  </p>
+                </div>
               </div>
-            </div>
+            )}
+
+            {isSubjectLocked && isIraLocked && (
+              <div className="bg-blue-50 border border-blue-200 rounded-xl p-4 flex gap-3">
+                <ShieldCheck className="text-blue-600 flex-shrink-0" size={24} />
+                <div>
+                  <h4 className="text-blue-900 font-bold text-sm uppercase tracking-wider">Revisão de Modalidade</h4>
+                  <p className="text-blue-800 text-xs mt-1 leading-relaxed">Suas notas já estão salvas de forma segura e imutável. Você está apenas alterando a modalidade desejada.</p>
+                </div>
+              </div>
+            )}
 
             <div className="space-y-2 text-sm text-gray-800 bg-gray-50 p-4 rounded-xl border border-gray-200">
               <p><strong>Identidade:</strong> {finalCandidateName}</p>

@@ -69,6 +69,30 @@ export default function Ranking({
   const userSubmission = userIndex >= 0 ? sortedSubmissions[userIndex] : null;
   const userRank = userIndex >= 0 ? userIndex + 1 : null;
 
+  // Gerar histórico dinâmico real (últimas 3 parciais)
+  const getHistoricalCutoffs = (hoursAgo: number) => {
+    const boundary = new Date(lastBoundary);
+    boundary.setHours(boundary.getHours() - hoursAgo);
+    
+    const pastSubs = submissions.filter(s => {
+      if (s.disciplineId !== selectedDiscipline.id) return false;
+      const subDate = new Date(s.submittedAt);
+      return subDate <= boundary;
+    }).sort((a, b) => {
+      if (b.finalScore !== a.finalScore) return b.finalScore - a.finalScore;
+      return b.ira - a.ira;
+    });
+
+    const rem = pastSubs[totalVagasRemuneradas - 1]?.finalScore || 0;
+    const vol = pastSubs[totalVagasGeral - 1]?.finalScore || 0;
+
+    return { time: boundary, rem, vol };
+  };
+
+  const hist5h = getHistoricalCutoffs(5);
+  const hist10h = getHistoricalCutoffs(10);
+  const hist15h = getHistoricalCutoffs(15);
+
   return (
     <div className="bg-white rounded-2xl shadow-lg border border-gray-200 overflow-hidden transition-all">
       
@@ -146,39 +170,29 @@ export default function Ranking({
         </div>
       </div>
 
-      {/* SEÇÃO HISTÓRICO FAKE */}
+      {/* SEÇÃO HISTÓRICO REAL */}
       <div className="bg-gray-50 border-b border-gray-200 px-6 py-3">
         <button 
           onClick={() => setShowHistory(!showHistory)}
           className="text-sm font-bold text-gray-600 hover:text-gray-900 flex items-center gap-2 transition-colors"
         >
           {showHistory ? <Minus size={16} /> : <PlusCircle size={16} />} 
-          Ver Histórico de Notas de Corte (Semestres Anteriores)
+          Ver Histórico do Ranking (Parciais Anteriores)
         </button>
         
         {showHistory && (
           <div className="mt-4 grid grid-cols-1 sm:grid-cols-3 gap-4 pb-2 animate-in fade-in slide-in-from-top-2">
-            <div className="bg-white border rounded-xl p-3 shadow-sm">
-              <span className="text-xs font-bold text-gray-500">Semestre 2023.2</span>
-              <div className="mt-2 text-sm">
-                <p>Remunerada: <strong className="text-emerald-700">18.45 pts</strong></p>
-                <p>Voluntária: <strong className="text-amber-700">17.20 pts</strong></p>
+            {[hist5h, hist10h, hist15h].map((h, i) => (
+              <div key={i} className="bg-white border rounded-xl p-3 shadow-sm">
+                <span className="text-xs font-bold text-gray-500">
+                  {h.time.toLocaleDateString('pt-BR')} às {h.time.toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})}
+                </span>
+                <div className="mt-2 text-sm">
+                  <p>Corte Remunerada: <strong className="text-emerald-700">{h.rem > 0 ? h.rem.toFixed(2) : '--'} pts</strong></p>
+                  <p>Corte Voluntária: <strong className="text-amber-700">{h.vol > 0 ? h.vol.toFixed(2) : '--'} pts</strong></p>
+                </div>
               </div>
-            </div>
-            <div className="bg-white border rounded-xl p-3 shadow-sm">
-              <span className="text-xs font-bold text-gray-500">Semestre 2023.1</span>
-              <div className="mt-2 text-sm">
-                <p>Remunerada: <strong className="text-emerald-700">18.10 pts</strong></p>
-                <p>Voluntária: <strong className="text-amber-700">16.95 pts</strong></p>
-              </div>
-            </div>
-            <div className="bg-white border rounded-xl p-3 shadow-sm">
-              <span className="text-xs font-bold text-gray-500">Semestre 2022.2</span>
-              <div className="mt-2 text-sm">
-                <p>Remunerada: <strong className="text-emerald-700">17.90 pts</strong></p>
-                <p>Voluntária: <strong className="text-amber-700">16.50 pts</strong></p>
-              </div>
-            </div>
+            ))}
           </div>
         )}
       </div>
@@ -208,22 +222,9 @@ export default function Ranking({
       )}
 
       {/* FERRAMENTAS E BOTAO DE INSERIR NOTA */}
-      <div className="p-6 flex flex-col md:flex-row justify-between items-stretch md:items-center gap-4">
-        <div className="flex items-center gap-3 flex-1">
-          <div className="relative flex-1 max-w-xs">
-            <input 
-              type="text" 
-              placeholder="Buscar candidato..." 
-              value={searchTerm}
-              onChange={(e) => setSearchTerm(e.target.value)}
-              className="w-full pl-9 pr-4 py-2 bg-gray-50 border border-gray-300 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-sisuBlue/50"
-            />
-            <Search size={16} className="absolute left-3 top-2.5 text-gray-400" />
-          </div>
-
-          <div className="flex items-center text-xs text-gray-500 bg-gray-100 px-3 py-2 rounded-xl border border-gray-200">
-            <Lock size={13} className="mr-1 text-gray-400" /> Nomes protegidos
-          </div>
+      <div className="p-6 flex flex-col md:flex-row justify-end items-stretch md:items-center gap-4">
+        <div className="flex items-center text-xs text-gray-500 bg-gray-100 px-3 py-2 rounded-xl border border-gray-200">
+          <Lock size={13} className="mr-1 text-gray-400" /> Nomes protegidos
         </div>
 
         <button
@@ -249,7 +250,6 @@ export default function Ranking({
           </thead>
           <tbody className="divide-y divide-gray-100">
             {sortedSubmissions
-              .filter(s => s.candidateName.toLowerCase().includes(searchTerm.toLowerCase()))
               .map((student, index) => {
                 const position = index + 1;
                 const isRemunerada = position <= totalVagasRemuneradas;
