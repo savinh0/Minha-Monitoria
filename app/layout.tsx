@@ -16,7 +16,7 @@ export default function RootLayout({
       <body className="antialiased bg-gray-50 text-gray-900 min-h-screen">
         <header className="bg-sisuBlue text-white py-4 shadow-md">
           <div className="container mx-auto px-4 flex justify-between items-center">
-            <h1 className="text-xl font-bold tracking-tight">MonitoriaApp</h1>
+            <h1 className="text-xl font-bold tracking-tight">Minha Monitoria</h1>
             <nav className="text-sm">
               <span className="opacity-80">Parciais atualizadas a cada 5 horas</span>
             </nav>
