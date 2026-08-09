@@ -143,12 +143,14 @@ export default function Home() {
     const userId = sessionData.session?.user?.id;
     if (!userId) return;
 
-    // Verificar se já existe (usando userId para evitar conflitos de nomes anonimos vs reais)
-    const existing = submissions.find(s => s.disciplineId === subData.disciplineId && s.userId === userId);
+    // Verificar se já existe ALGUMA submissão desse aluno no sistema INTEIRO (limite de 1 monitoria por aluno)
+    const existing = submissions.find(s => s.userId === userId);
 
     if (existing) {
       // É uma atualização. O trigger do Supabase vai checar o IRA no banco.
+      // Se ele trocou de matéria, a discipline_id será atualizada e ele sairá do ranking anterior.
       const { data, error } = await supabase.from('submissions').update({
+        discipline_id: subData.disciplineId,
         subject_score: subData.subjectScore,
         ira: subData.ira,
         final_score: subData.finalScore,

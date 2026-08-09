@@ -33,6 +33,8 @@ export default function StudentFormModal({
   const [modalityPreference, setModalityPreference] = useState<'remunerada' | 'voluntaria'>('remunerada');
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
   const [showConfirm, setShowConfirm] = useState(false);
+  const [isSwitchingDiscipline, setIsSwitchingDiscipline] = useState(false);
+  const [oldDisciplineName, setOldDisciplineName] = useState<string>('');
 
   React.useEffect(() => {
     if (isOpen) {
@@ -47,27 +49,32 @@ export default function StudentFormModal({
         const userSubs = submissions.filter(s => s.userId === userId);
         const currentDiscSub = userSubs.find(s => s.disciplineId === initialDisc);
 
-        if (currentDiscSub) {
-          setSubjectScore(currentDiscSub.subjectScore.toString());
-          setIra(currentDiscSub.ira.toFixed(4));
-          setIsSubjectLocked(true);
-          setIsIraLocked(true);
-          setModalityPreference(currentDiscSub.modalityPreference);
-          setIsAnonymous(currentDiscSub.isAnonymous);
-        } else if (userSubs.length > 0) {
-          setSubjectScore('9.0');
-          setIra(userSubs[0].ira.toFixed(4));
-          setIsSubjectLocked(false);
-          setIsIraLocked(true);
-        } else {
-          setSubjectScore('9.0');
-          setIra('9.0000');
-          setIsSubjectLocked(false);
-          setIsIraLocked(false);
+          if (currentDiscSub) {
+            setSubjectScore(currentDiscSub.subjectScore.toString());
+            setIra(currentDiscSub.ira.toFixed(4));
+            setIsSubjectLocked(true);
+            setIsIraLocked(true);
+            setModalityPreference(currentDiscSub.modalityPreference);
+            setIsAnonymous(currentDiscSub.isAnonymous);
+            setIsSwitchingDiscipline(false);
+          } else if (userSubs.length > 0) {
+            setSubjectScore('9.0');
+            setIra(userSubs[0].ira.toFixed(4));
+            setIsSubjectLocked(false);
+            setIsIraLocked(true);
+            setIsSwitchingDiscipline(true);
+            const oldDisc = disciplines.find(d => d.id === userSubs[0].disciplineId);
+            setOldDisciplineName(oldDisc ? oldDisc.name : 'Outra Matéria');
+          } else {
+            setSubjectScore('9.0');
+            setIra('9.0000');
+            setIsSubjectLocked(false);
+            setIsIraLocked(false);
+            setIsSwitchingDiscipline(false);
+          }
         }
       }
-    }
-  }, [isOpen, defaultDisciplineId, disciplines, submissions, userId]);
+    }, [isOpen, defaultDisciplineId, disciplines, submissions, userId]);
 
   const handleDisciplineChange = (newDiscId: string) => {
     setDisciplineId(newDiscId);
@@ -75,26 +82,31 @@ export default function StudentFormModal({
       const userSubs = submissions.filter(s => s.userId === userId);
       const currentDiscSub = userSubs.find(s => s.disciplineId === newDiscId);
 
-      if (currentDiscSub) {
-        setSubjectScore(currentDiscSub.subjectScore.toString());
-        setIra(currentDiscSub.ira.toFixed(4));
-        setIsSubjectLocked(true);
-        setIsIraLocked(true);
-        setModalityPreference(currentDiscSub.modalityPreference);
-        setIsAnonymous(currentDiscSub.isAnonymous);
-      } else if (userSubs.length > 0) {
-        setSubjectScore('9.0');
-        setIra(userSubs[0].ira.toFixed(4));
-        setIsSubjectLocked(false);
-        setIsIraLocked(true);
-      } else {
-        setSubjectScore('9.0');
-        setIra('9.0000');
-        setIsSubjectLocked(false);
-        setIsIraLocked(false);
+        if (currentDiscSub) {
+          setSubjectScore(currentDiscSub.subjectScore.toString());
+          setIra(currentDiscSub.ira.toFixed(4));
+          setIsSubjectLocked(true);
+          setIsIraLocked(true);
+          setModalityPreference(currentDiscSub.modalityPreference);
+          setIsAnonymous(currentDiscSub.isAnonymous);
+          setIsSwitchingDiscipline(false);
+        } else if (userSubs.length > 0) {
+          setSubjectScore('9.0');
+          setIra(userSubs[0].ira.toFixed(4));
+          setIsSubjectLocked(false);
+          setIsIraLocked(true);
+          setIsSwitchingDiscipline(true);
+          const oldDisc = disciplines.find(d => d.id === userSubs[0].disciplineId);
+          setOldDisciplineName(oldDisc ? oldDisc.name : 'Outra Matéria');
+        } else {
+          setSubjectScore('9.0');
+          setIra('9.0000');
+          setIsSubjectLocked(false);
+          setIsIraLocked(false);
+          setIsSwitchingDiscipline(false);
+        }
       }
-    }
-  };
+    };
 
   if (!isOpen) return null;
 
@@ -330,10 +342,24 @@ export default function StudentFormModal({
                     {!isSubjectLocked && !isIraLocked && (
                       <strong>A sua Nota da Matéria e o seu IRA não poderão ser alterados em hipótese alguma após o envio.</strong>
                     )}
-                    {!isSubjectLocked && isIraLocked && (
+                    {!isSubjectLocked && isIraLocked && !isSwitchingDiscipline && (
                       <strong>A sua Nota da Matéria não poderá ser alterada em hipótese alguma após o envio.</strong>
                     )}
                     {' '}Apenas a modalidade poderá ser trocada depois.
+                  </p>
+                </div>
+              </div>
+            )}
+
+            {isSwitchingDiscipline && (
+              <div className="bg-red-50 border border-red-200 rounded-xl p-4 flex gap-3">
+                <AlertTriangle className="text-red-600 flex-shrink-0" size={24} />
+                <div>
+                  <h4 className="text-red-900 font-bold text-sm uppercase tracking-wider">Atenção: Troca de Monitoria</h4>
+                  <p className="text-red-800 text-xs mt-1 leading-relaxed">
+                    Você já está concorrendo à vaga de <strong>{oldDisciplineName}</strong>. 
+                    Como cada aluno só pode concorrer a UMA única monitoria, ao enviar este formulário você será 
+                    <strong> AUTOMATICAMENTE REMOVIDO</strong> do ranking da disciplina anterior!
                   </p>
                 </div>
               </div>
