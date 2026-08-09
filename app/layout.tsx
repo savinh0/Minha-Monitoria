@@ -2,7 +2,7 @@ import type { Metadata } from "next";
 import "./globals.css";
 
 export const metadata: Metadata = {
-  title: "MonitoriaApp - Parciais Estilo SiSU",
+  title: "Minha Monitoria",
   description: "Sistema transparente de ranqueamento de monitorias",
 };
 
