@@ -7,11 +7,16 @@ import { Mail, ArrowRight, ShieldCheck, AlertCircle } from 'lucide-react';
 export default function LoginPage() {
   const [email, setEmail] = useState('');
   const [loading, setLoading] = useState(false);
+  const [acceptedTerms, setAcceptedTerms] = useState(false);
   const [message, setMessage] = useState<{ type: 'success' | 'error', text: string } | null>(null);
   const supabase = createClient();
 
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
+    if (!acceptedTerms) {
+      setMessage({ type: 'error', text: 'Você deve aceitar os Termos do Usuário para continuar.' });
+      return;
+    }
     setLoading(true);
     setMessage(null);
 
@@ -90,11 +95,29 @@ export default function LoginPage() {
               </div>
             )}
 
+            <div className="flex items-start">
+              <div className="flex items-center h-5">
+                <input
+                  id="terms"
+                  name="terms"
+                  type="checkbox"
+                  checked={acceptedTerms}
+                  onChange={(e) => setAcceptedTerms(e.target.checked)}
+                  className="focus:ring-sisuBlue h-4 w-4 text-sisuBlue border-gray-300 rounded cursor-pointer"
+                />
+              </div>
+              <div className="ml-3 text-sm">
+                <label htmlFor="terms" className="font-medium text-gray-700 cursor-pointer select-none">
+                  Eu aceito os <a href="/termos" target="_blank" rel="noopener noreferrer" className="text-sisuBlue hover:underline hover:text-blue-800" onClick={(e) => e.stopPropagation()}>Termos do Usuário</a>
+                </label>
+              </div>
+            </div>
+
             <div>
               <button
                 type="submit"
-                disabled={loading}
-                className="w-full flex justify-center items-center gap-2 py-3 px-4 border border-transparent rounded-xl shadow-sm text-sm font-bold text-white bg-sisuBlue hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-sisuBlue transition-all disabled:opacity-70"
+                disabled={loading || !acceptedTerms}
+                className="w-full flex justify-center items-center gap-2 py-3 px-4 border border-transparent rounded-xl shadow-sm text-sm font-bold text-white bg-sisuBlue hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-sisuBlue transition-all disabled:opacity-70 disabled:cursor-not-allowed"
               >
                 {loading ? 'Enviando...' : 'Receber Link Mágico'}
                 {!loading && <ArrowRight className="w-4 h-4" />}

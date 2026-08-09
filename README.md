@@ -1,4 +1,4 @@
-# 📚 Minha Monitoria
+# 📚 Minha Monitoria (Sisu-Style)
 
 Um aplicativo web dinâmico e interativo projetado para simular o ranqueamento de vagas de monitoria acadêmica. Inspirado na mecânica do SISU (Sistema de Seleção Unificada), o sistema permite que estudantes simulem suas posições em tempo real, acompanhem notas de corte parciais e tomem decisões estratégicas sobre em qual disciplina desejam concorrer.
 
