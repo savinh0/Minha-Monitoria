@@ -20,7 +20,7 @@ export default function Ranking({
   onOpenSubmitModal,
   userId,
 }: RankingProps) {
-  const [searchTerm, setSearchTerm] = useState("");
+  const [disciplineSearchTerm, setDisciplineSearchTerm] = useState("");
   const [filterModality, setFilterModality] = useState<'todas' | 'remunerada' | 'voluntaria'>('todas');
   const [showHistory, setShowHistory] = useState(false);
 
@@ -33,6 +33,11 @@ export default function Ranking({
       </div>
     );
   }
+
+  const filteredDisciplines = disciplines.filter(disc => {
+    const term = disciplineSearchTerm.toLowerCase();
+    return disc.name.toLowerCase().includes(term) || disc.course.toLowerCase().includes(term);
+  });
 
   // Cálculo das Janelas de 5 horas
   const now = new Date();
@@ -96,28 +101,45 @@ export default function Ranking({
   return (
     <div className="bg-white rounded-2xl shadow-lg border border-gray-200 overflow-hidden transition-all">
       
-      {/* ABAS DE DISCIPLINAS */}
-      <div className="bg-gray-50 border-b border-gray-200">
-        <div className="flex overflow-x-auto hide-scrollbar p-2 gap-2">
-          {disciplines.map(disc => (
-            <button
-              key={disc.id}
-              onClick={() => onSelectDiscipline(disc.id)}
-              className={`py-3 px-5 font-semibold text-sm rounded-xl transition-all whitespace-nowrap flex items-center gap-2.5
-                ${activeDisciplineId === disc.id 
-                  ? 'bg-sisuBlue text-white shadow-md shadow-blue-600/20' 
-                  : 'text-gray-600 hover:text-gray-900 hover:bg-gray-200/60'}
-              `}
-            >
-              <BookOpen size={16} />
-              <span>{disc.name}</span>
-              <span className={`text-[10px] px-2 py-0.5 rounded-full font-bold ${
-                activeDisciplineId === disc.id ? 'bg-white/20 text-white' : 'bg-gray-200 text-gray-700'
-              }`}>
-                {disc.course}
-              </span>
-            </button>
-          ))}
+      {/* BUSCA E ABAS DE DISCIPLINAS */}
+      <div className="bg-gray-50 border-b border-gray-200 flex flex-col md:flex-row items-center p-3 gap-3">
+        <div className="relative w-full md:w-80 flex-shrink-0">
+          <input 
+            type="text" 
+            placeholder="Buscar disciplina ou curso..." 
+            value={disciplineSearchTerm}
+            onChange={(e) => setDisciplineSearchTerm(e.target.value)}
+            className="w-full pl-9 pr-4 py-2 bg-white border border-gray-300 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-sisuBlue/50"
+          />
+          <Search size={16} className="absolute left-3 top-2.5 text-gray-400" />
+        </div>
+        
+        <div className="flex overflow-x-auto hide-scrollbar flex-1 gap-2 w-full">
+          {filteredDisciplines.length > 0 ? (
+            filteredDisciplines.map(disc => (
+              <button
+                key={disc.id}
+                onClick={() => onSelectDiscipline(disc.id)}
+                className={`py-2 px-4 font-semibold text-sm rounded-xl transition-all whitespace-nowrap flex items-center gap-2.5
+                  ${activeDisciplineId === disc.id 
+                    ? 'bg-sisuBlue text-white shadow-md shadow-blue-600/20' 
+                    : 'text-gray-600 hover:text-gray-900 hover:bg-gray-200/60'}
+                `}
+              >
+                <BookOpen size={16} />
+                <span>{disc.name}</span>
+                <span className={`text-[10px] px-2 py-0.5 rounded-full font-bold ${
+                  activeDisciplineId === disc.id ? 'bg-white/20 text-white' : 'bg-gray-200 text-gray-700'
+                }`}>
+                  {disc.course}
+                </span>
+              </button>
+            ))
+          ) : (
+            <div className="py-2 px-4 text-sm text-gray-500 italic">
+              Nenhuma disciplina ou curso encontrado para "{disciplineSearchTerm}".
+            </div>
+          )}
         </div>
       </div>
 
