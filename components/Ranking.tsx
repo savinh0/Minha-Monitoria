@@ -48,9 +48,23 @@ export default function Ranking({
   const nextBoundary = new Date(lastBoundary);
   nextBoundary.setHours(boundaryHour + 5);
 
-  // Filtrar submissões da disciplina atual E que respeitam o limite de tempo
+  // Mapear a última submissão GLOBAL de cada usuário
+  const latestUserSubmissions = new Map<string, CandidateSubmission>();
+  submissions.forEach(s => {
+    const existing = latestUserSubmissions.get(s.userId);
+    if (!existing || new Date(s.submittedAt) > new Date(existing.submittedAt)) {
+      latestUserSubmissions.set(s.userId, s);
+    }
+  });
+
+  // Filtrar submissões da disciplina atual E que respeitam o limite de tempo E são a submissão ativa (última) do usuário
   const currentSubmissions = submissions.filter(s => {
     if (s.disciplineId !== selectedDiscipline.id) return false;
+    
+    // Verifica se esta submissão é a MAIS RECENTE do usuário no sistema inteiro
+    const latestForUser = latestUserSubmissions.get(s.userId);
+    if (latestForUser && latestForUser.id !== s.id) return false;
+
     const subDate = new Date(s.submittedAt);
     return subDate <= lastBoundary;
   });
@@ -79,8 +93,24 @@ export default function Ranking({
     const boundary = new Date(lastBoundary);
     boundary.setHours(boundary.getHours() - hoursAgo);
     
+    // Mapear a última submissão GLOBAL até aquele momento no passado
+    const pastLatestUserSubmissions = new Map<string, CandidateSubmission>();
+    submissions.forEach(s => {
+      const subDate = new Date(s.submittedAt);
+      if (subDate <= boundary) {
+        const existing = pastLatestUserSubmissions.get(s.userId);
+        if (!existing || subDate > new Date(existing.submittedAt)) {
+          pastLatestUserSubmissions.set(s.userId, s);
+        }
+      }
+    });
+
     const pastSubs = submissions.filter(s => {
       if (s.disciplineId !== selectedDiscipline.id) return false;
+      
+      const latestForUser = pastLatestUserSubmissions.get(s.userId);
+      if (latestForUser && latestForUser.id !== s.id) return false;
+
       const subDate = new Date(s.submittedAt);
       return subDate <= boundary;
     }).sort((a, b) => {

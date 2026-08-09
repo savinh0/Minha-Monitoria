@@ -177,10 +177,10 @@ export default function StudentFormModal({
   const calculatedFinalScore = parsedSubject + parsedIra;
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm p-4 animate-in fade-in duration-200">
-      <div className="bg-white rounded-2xl shadow-2xl max-w-lg w-full overflow-hidden border border-gray-100">
+    <div className="fixed inset-0 z-[9999] flex items-center justify-center bg-black/60 backdrop-blur-sm p-4 animate-in fade-in duration-200">
+      <div className="bg-white rounded-2xl shadow-2xl max-w-lg w-full flex flex-col max-h-[90vh] border border-gray-100 overflow-hidden">
         
-        <div className="bg-sisuBlue text-white p-6 relative">
+        <div className="bg-sisuBlue text-white p-6 relative flex-shrink-0">
           <button 
             onClick={onClose}
             className="absolute top-4 right-4 text-blue-200 hover:text-white transition-colors"
@@ -199,7 +199,7 @@ export default function StudentFormModal({
         </div>
 
         {!showConfirm ? (
-          <form onSubmit={handleFirstSubmit} className="p-6 space-y-4">
+          <form onSubmit={handleFirstSubmit} className="p-6 space-y-4 overflow-y-auto">
             
             <div>
               <label className="block text-xs font-bold uppercase tracking-wider text-gray-700 mb-1">
@@ -331,7 +331,7 @@ export default function StudentFormModal({
             </div>
           </form>
         ) : (
-          <div className="p-6 space-y-6">
+          <div className="p-6 space-y-6 overflow-y-auto">
             {(!isSubjectLocked || !isIraLocked) && (
               <div className="bg-amber-50 border border-amber-200 rounded-xl p-4 flex gap-3">
                 <AlertTriangle className="text-amber-600 flex-shrink-0" size={24} />

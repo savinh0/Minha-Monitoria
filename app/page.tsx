@@ -143,19 +143,21 @@ export default function Home() {
     const userId = sessionData.session?.user?.id;
     if (!userId) return;
 
-    // Verificar se já existe ALGUMA submissão desse aluno no sistema INTEIRO (limite de 1 monitoria por aluno)
-    const existing = submissions.find(s => s.userId === userId);
+    // Verificar se já existe uma submissão para ESTA disciplina
+    const existing = submissions.find(s => s.disciplineId === subData.disciplineId && s.userId === userId);
+
+    const now = new Date().toISOString();
 
     if (existing) {
       // É uma atualização. O trigger do Supabase vai checar o IRA no banco.
-      // Se ele trocou de matéria, a discipline_id será atualizada e ele sairá do ranking anterior.
+      // Atualizamos o submitted_at para tornar esta a submissão "ativa" mais recente do aluno.
       const { data, error } = await supabase.from('submissions').update({
-        discipline_id: subData.disciplineId,
         subject_score: subData.subjectScore,
         ira: subData.ira,
         final_score: subData.finalScore,
         modality_preference: subData.modalityPreference,
-        is_anonymous: subData.isAnonymous
+        is_anonymous: subData.isAnonymous,
+        submitted_at: now
       }).eq('id', existing.id).select();
 
       if (error) {
@@ -169,8 +171,10 @@ export default function Home() {
         const updatedSub: CandidateSubmission = {
           ...existing,
           ...subData,
+          submittedAt: now
         };
-        setSubmissions(submissions.map(s => s.id === existing.id ? updatedSub : s));
+        // Remove a antiga e coloca a nova no topo (para manter a ordem correta)
+        setSubmissions([updatedSub, ...submissions.filter(s => s.id !== existing.id)]);
       }
     } else {
       // Nova Inserção
@@ -182,7 +186,8 @@ export default function Home() {
         subject_score: subData.subjectScore,
         ira: subData.ira,
         final_score: subData.finalScore,
-        modality_preference: subData.modalityPreference
+        modality_preference: subData.modalityPreference,
+        submitted_at: now
       }]).select();
 
       if (error) {
