@@ -108,7 +108,7 @@ export default function LoginPage() {
               </div>
               <div className="ml-3 text-sm">
                 <label htmlFor="terms" className="font-medium text-gray-700 cursor-pointer select-none">
-                  Eu aceito os <a href="/termos.pdf" target="_blank" rel="noopener noreferrer" className="text-sisuBlue hover:underline hover:text-blue-800" onClick={(e) => e.stopPropagation()}>Termos do Usuário</a>
+                  Eu aceito os <a href="/termos" target="_blank" rel="noopener noreferrer" className="text-sisuBlue hover:underline hover:text-blue-800" onClick={(e) => e.stopPropagation()}>Termos do Usuário</a>
                 </label>
               </div>
             </div>
