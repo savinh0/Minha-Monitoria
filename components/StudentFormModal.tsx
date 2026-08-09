@@ -148,6 +148,7 @@ export default function StudentFormModal({
 
     onSubmitScore({
       disciplineId,
+      userId: userId || '',
       candidateName: finalCandidateName,
       isAnonymous,
       subjectScore: numSubj,
