@@ -13,6 +13,7 @@ export default function Home() {
   const [activeDisciplineId, setActiveDisciplineId] = useState<string>('');
   
   const [userEmail, setUserEmail] = useState<string | null>(null);
+  const [userId, setUserId] = useState<string | null>(null);
   const [isAdmin, setIsAdmin] = useState(false);
   const [isAdminMode, setIsAdminMode] = useState(false);
   const [isStudentModalOpen, setIsStudentModalOpen] = useState(false);
@@ -26,7 +27,9 @@ export default function Home() {
       // 1. Verificar Sessão Auth
       const { data: { session } } = await supabase.auth.getSession();
       const email = session?.user?.email || null;
+      const id = session?.user?.id || null;
       setUserEmail(email);
+      setUserId(id);
       
       const adminEmail = process.env.NEXT_PUBLIC_ADMIN_EMAIL;
       if (email && email === adminEmail) {
@@ -51,6 +54,7 @@ export default function Home() {
       const formattedSub: CandidateSubmission[] = (subData || []).map((s: any) => ({
         id: s.id,
         disciplineId: s.discipline_id,
+        userId: s.user_id,
         candidateName: s.candidate_name,
         isAnonymous: s.is_anonymous,
         subjectScore: Number(s.subject_score),
@@ -139,8 +143,8 @@ export default function Home() {
     const userId = sessionData.session?.user?.id;
     if (!userId) return;
 
-    // Verificar se já existe (Upsert lógico)
-    const existing = submissions.find(s => s.disciplineId === subData.disciplineId && s.candidateName === subData.candidateName);
+    // Verificar se já existe (usando userId para evitar conflitos de nomes anonimos vs reais)
+    const existing = submissions.find(s => s.disciplineId === subData.disciplineId && s.userId === userId);
 
     if (existing) {
       // É uma atualização. O trigger do Supabase vai checar o IRA no banco.
@@ -157,6 +161,7 @@ export default function Home() {
         return;
       }
       if (data) {
+        alert("Oh, você colocou para tal monitoria! Pode editar a modalidade se quiser, a última é a que vale, mas a parcial só vai sair no próximo horário de atualização de hoje.");
         const updatedSub: CandidateSubmission = {
           ...existing,
           ...subData,
@@ -182,9 +187,11 @@ export default function Home() {
       }
       
       if (data) {
+        alert("Oh, você colocou para tal monitoria! Pode editar a modalidade se quiser, a última é a que vale, mas a parcial só vai sair no próximo horário de atualização de hoje.");
         const newSub: CandidateSubmission = {
           ...subData,
           id: data[0].id,
+          userId: userId,
           trend: 'same',
           submittedAt: data[0].submitted_at
         };
@@ -293,8 +300,10 @@ export default function Home() {
         isOpen={isStudentModalOpen}
         onClose={() => setIsStudentModalOpen(false)}
         disciplines={disciplines}
+        submissions={submissions}
         defaultDisciplineId={studentModalDefaultDisc}
         userEmail={userEmail}
+        userId={userId}
         onSubmitScore={handleStudentSubmitScore}
       />
     </div>

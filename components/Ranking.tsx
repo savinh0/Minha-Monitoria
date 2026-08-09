@@ -9,6 +9,7 @@ interface RankingProps {
   activeDisciplineId: string;
   onSelectDiscipline: (id: string) => void;
   onOpenSubmitModal: (disciplineId?: string) => void;
+  userId: string | null;
 }
 
 export default function Ranking({
@@ -17,9 +18,11 @@ export default function Ranking({
   activeDisciplineId,
   onSelectDiscipline,
   onOpenSubmitModal,
+  userId,
 }: RankingProps) {
   const [searchTerm, setSearchTerm] = useState("");
   const [filterModality, setFilterModality] = useState<'todas' | 'remunerada' | 'voluntaria'>('todas');
+  const [showHistory, setShowHistory] = useState(false);
 
   const selectedDiscipline = disciplines.find(c => c.id === activeDisciplineId) || disciplines[0];
   
@@ -31,8 +34,21 @@ export default function Ranking({
     );
   }
 
-  // Filtrar submissões da disciplina atual
-  const currentSubmissions = submissions.filter(s => s.disciplineId === selectedDiscipline.id);
+  // Cálculo das Janelas de 5 horas
+  const now = new Date();
+  const h = now.getHours();
+  const boundaryHour = Math.floor(h / 5) * 5;
+  const lastBoundary = new Date(now);
+  lastBoundary.setHours(boundaryHour, 0, 0, 0);
+  const nextBoundary = new Date(lastBoundary);
+  nextBoundary.setHours(boundaryHour + 5);
+
+  // Filtrar submissões da disciplina atual E que respeitam o limite de tempo
+  const currentSubmissions = submissions.filter(s => {
+    if (s.disciplineId !== selectedDiscipline.id) return false;
+    const subDate = new Date(s.submittedAt);
+    return subDate <= lastBoundary;
+  });
 
   // Ordenar: Nota Final (descendente) -> IRA (desempate)
   const sortedSubmissions = [...currentSubmissions].sort((a, b) => {
@@ -48,8 +64,8 @@ export default function Ranking({
   const cutoffRemunerada = sortedSubmissions[totalVagasRemuneradas - 1]?.finalScore || 0;
   const cutoffVoluntaria = sortedSubmissions[totalVagasGeral - 1]?.finalScore || 0;
 
-  // Encontrar posição do candidato "Você" (se houver)
-  const userIndex = sortedSubmissions.findIndex(s => s.candidateName.includes("Você") || s.candidateName.toLowerCase().includes("sávio"));
+  // Encontrar posição do candidato "Você" (se houver) na PARCIAL
+  const userIndex = sortedSubmissions.findIndex(s => s.userId === userId);
   const userSubmission = userIndex >= 0 ? sortedSubmissions[userIndex] : null;
   const userRank = userIndex >= 0 ? userIndex + 1 : null;
 
@@ -82,6 +98,9 @@ export default function Ranking({
       </div>
 
       {/* PAINEL INFORMATIVO DA DISCIPLINA */}
+      <div className="bg-blue-50/50 border-b border-blue-100 p-2 text-center text-xs text-blue-800 font-medium">
+        ⏱️ Ranking Parcial estático. Última atualização: <strong>{lastBoundary.toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})}</strong> — Próxima parcial: <strong>{nextBoundary.toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})}</strong>
+      </div>
       <div className="p-6 grid grid-cols-1 md:grid-cols-3 gap-6 bg-white border-b border-gray-100">
         <div className="col-span-2 flex flex-col justify-center">
           <div className="flex items-center gap-3 mb-2">
@@ -125,6 +144,43 @@ export default function Ranking({
             <span className="text-[10px] text-amber-600 font-medium">pts</span>
           </div>
         </div>
+      </div>
+
+      {/* SEÇÃO HISTÓRICO FAKE */}
+      <div className="bg-gray-50 border-b border-gray-200 px-6 py-3">
+        <button 
+          onClick={() => setShowHistory(!showHistory)}
+          className="text-sm font-bold text-gray-600 hover:text-gray-900 flex items-center gap-2 transition-colors"
+        >
+          {showHistory ? <Minus size={16} /> : <PlusCircle size={16} />} 
+          Ver Histórico de Notas de Corte (Semestres Anteriores)
+        </button>
+        
+        {showHistory && (
+          <div className="mt-4 grid grid-cols-1 sm:grid-cols-3 gap-4 pb-2 animate-in fade-in slide-in-from-top-2">
+            <div className="bg-white border rounded-xl p-3 shadow-sm">
+              <span className="text-xs font-bold text-gray-500">Semestre 2023.2</span>
+              <div className="mt-2 text-sm">
+                <p>Remunerada: <strong className="text-emerald-700">18.45 pts</strong></p>
+                <p>Voluntária: <strong className="text-amber-700">17.20 pts</strong></p>
+              </div>
+            </div>
+            <div className="bg-white border rounded-xl p-3 shadow-sm">
+              <span className="text-xs font-bold text-gray-500">Semestre 2023.1</span>
+              <div className="mt-2 text-sm">
+                <p>Remunerada: <strong className="text-emerald-700">18.10 pts</strong></p>
+                <p>Voluntária: <strong className="text-amber-700">16.95 pts</strong></p>
+              </div>
+            </div>
+            <div className="bg-white border rounded-xl p-3 shadow-sm">
+              <span className="text-xs font-bold text-gray-500">Semestre 2022.2</span>
+              <div className="mt-2 text-sm">
+                <p>Remunerada: <strong className="text-emerald-700">17.90 pts</strong></p>
+                <p>Voluntária: <strong className="text-amber-700">16.50 pts</strong></p>
+              </div>
+            </div>
+          </div>
+        )}
       </div>
 
       {/* BANNER SE VOCÊ ESTIVER SIMULADO */}
@@ -200,7 +256,7 @@ export default function Ranking({
                 const isVoluntaria = !isRemunerada && position <= totalVagasGeral;
                 const isCutoffRemunerada = position === totalVagasRemuneradas;
                 const isCutoffVoluntaria = position === totalVagasGeral;
-                const isUser = student.candidateName.includes("Você") || student.candidateName.toLowerCase().includes("sávio");
+                const isUser = student.userId === userId;
 
                 return (
                   <React.Fragment key={student.id}>

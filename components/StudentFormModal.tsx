@@ -7,8 +7,10 @@ interface StudentFormModalProps {
   isOpen: boolean;
   onClose: () => void;
   disciplines: Discipline[];
+  submissions: CandidateSubmission[];
   defaultDisciplineId?: string;
   userEmail: string | null;
+  userId: string | null;
   onSubmitScore: (submission: Omit<CandidateSubmission, 'id' | 'trend' | 'submittedAt'>) => void;
 }
 
@@ -16,29 +18,83 @@ export default function StudentFormModal({
   isOpen,
   onClose,
   disciplines,
+  submissions,
   defaultDisciplineId,
   userEmail,
+  userId,
   onSubmitScore,
 }: StudentFormModalProps) {
   const [disciplineId, setDisciplineId] = useState('');
   const [isAnonymous, setIsAnonymous] = useState(false);
   const [subjectScore, setSubjectScore] = useState<string>('9.0');
   const [ira, setIra] = useState<string>('9.0000');
+  const [isSubjectLocked, setIsSubjectLocked] = useState(false);
+  const [isIraLocked, setIsIraLocked] = useState(false);
   const [modalityPreference, setModalityPreference] = useState<'remunerada' | 'voluntaria'>('remunerada');
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
   const [showConfirm, setShowConfirm] = useState(false);
 
   React.useEffect(() => {
     if (isOpen) {
-      setDisciplineId(defaultDisciplineId || disciplines[0]?.id || '');
+      const initialDisc = defaultDisciplineId || disciplines[0]?.id || '';
+      setDisciplineId(initialDisc);
       setIsAnonymous(false);
-      setSubjectScore('9.0');
-      setIra('9.0000');
       setModalityPreference('remunerada');
       setErrorMsg(null);
       setShowConfirm(false);
+
+      if (userId && submissions) {
+        const userSubs = submissions.filter(s => s.userId === userId);
+        const currentDiscSub = userSubs.find(s => s.disciplineId === initialDisc);
+
+        if (currentDiscSub) {
+          setSubjectScore(currentDiscSub.subjectScore.toString());
+          setIra(currentDiscSub.ira.toFixed(4));
+          setIsSubjectLocked(true);
+          setIsIraLocked(true);
+          setModalityPreference(currentDiscSub.modalityPreference);
+          setIsAnonymous(currentDiscSub.isAnonymous);
+        } else if (userSubs.length > 0) {
+          setSubjectScore('9.0');
+          setIra(userSubs[0].ira.toFixed(4));
+          setIsSubjectLocked(false);
+          setIsIraLocked(true);
+        } else {
+          setSubjectScore('9.0');
+          setIra('9.0000');
+          setIsSubjectLocked(false);
+          setIsIraLocked(false);
+        }
+      }
     }
-  }, [isOpen, defaultDisciplineId, disciplines]);
+  }, [isOpen, defaultDisciplineId, disciplines, submissions, userId]);
+
+  const handleDisciplineChange = (newDiscId: string) => {
+    setDisciplineId(newDiscId);
+    if (userId && submissions) {
+      const userSubs = submissions.filter(s => s.userId === userId);
+      const currentDiscSub = userSubs.find(s => s.disciplineId === newDiscId);
+
+      if (currentDiscSub) {
+        setSubjectScore(currentDiscSub.subjectScore.toString());
+        setIra(currentDiscSub.ira.toFixed(4));
+        setIsSubjectLocked(true);
+        setIsIraLocked(true);
+        setModalityPreference(currentDiscSub.modalityPreference);
+        setIsAnonymous(currentDiscSub.isAnonymous);
+      } else if (userSubs.length > 0) {
+        setSubjectScore('9.0');
+        setIra(userSubs[0].ira.toFixed(4));
+        setIsSubjectLocked(false);
+        setIsIraLocked(true);
+      } else {
+        setSubjectScore('9.0');
+        setIra('9.0000');
+        setIsSubjectLocked(false);
+        setIsIraLocked(false);
+      }
+    }
+  };
 
   if (!isOpen) return null;
 
@@ -138,7 +194,7 @@ export default function StudentFormModal({
               </label>
               <select
                 value={disciplineId}
-                onChange={(e) => setDisciplineId(e.target.value)}
+                onChange={(e) => handleDisciplineChange(e.target.value)}
                 className="w-full px-3 py-2.5 bg-gray-50 border border-gray-300 rounded-lg text-sm text-gray-900 font-medium focus:outline-none focus:ring-2 focus:ring-sisuBlue/50"
               >
                 {disciplines.map(d => (
@@ -172,7 +228,7 @@ export default function StudentFormModal({
             <div className="grid grid-cols-2 gap-4">
               <div>
                 <label className="block text-xs font-bold uppercase tracking-wider text-gray-700 mb-1">
-                  Nota na Matéria
+                  Nota na Matéria {isSubjectLocked && <span className="text-red-500 ml-1">(Travado)</span>}
                 </label>
                 <input
                   type="text"
@@ -180,13 +236,14 @@ export default function StudentFormModal({
                   onChange={(e) => setSubjectScore(e.target.value)}
                   placeholder="Ex: 9.5"
                   required
-                  className="w-full px-3 py-2.5 bg-gray-50 border border-gray-300 rounded-lg text-sm text-gray-900 font-bold focus:outline-none focus:ring-2 focus:ring-sisuBlue/50"
+                  disabled={isSubjectLocked}
+                  className={`w-full px-3 py-2.5 bg-gray-50 border border-gray-300 rounded-lg text-sm text-gray-900 font-bold focus:outline-none focus:ring-2 focus:ring-sisuBlue/50 ${isSubjectLocked ? 'opacity-70 cursor-not-allowed' : ''}`}
                 />
               </div>
 
               <div>
                 <label className="block text-xs font-bold uppercase tracking-wider text-gray-700 mb-1">
-                  Seu IRA (4 casas)
+                  Seu IRA (4 casas) {isIraLocked && <span className="text-red-500 ml-1">(Travado)</span>}
                 </label>
                 <input
                   type="text"
@@ -194,7 +251,8 @@ export default function StudentFormModal({
                   onChange={(e) => setIra(e.target.value)}
                   placeholder="Ex: 9.1234"
                   required
-                  className="w-full px-3 py-2.5 bg-gray-50 border border-gray-300 rounded-lg text-sm text-gray-900 font-bold focus:outline-none focus:ring-2 focus:ring-sisuBlue/50"
+                  disabled={isIraLocked}
+                  className={`w-full px-3 py-2.5 bg-gray-50 border border-gray-300 rounded-lg text-sm text-gray-900 font-bold focus:outline-none focus:ring-2 focus:ring-sisuBlue/50 ${isIraLocked ? 'opacity-70 cursor-not-allowed' : ''}`}
                 />
               </div>
             </div>
@@ -266,7 +324,7 @@ export default function StudentFormModal({
               <div>
                 <h4 className="text-amber-900 font-bold text-sm uppercase tracking-wider">Dupla Verificação: IRA Imutável</h4>
                 <p className="text-amber-800 text-xs mt-1 leading-relaxed">
-                  Confirme com atenção as suas notas. Você poderá atualizar a nota da matéria depois se tiver errado, <strong>mas o valor do IRA não poderá ser alterado NUNCA MAIS no sistema</strong> após o primeiro envio.
+                  Confirme com atenção as suas notas. <strong>A sua Nota da Matéria e o valor do seu IRA não poderão ser alterados em hipótese alguma</strong> após o primeiro envio. Apenas a modalidade poderá ser trocada.
                 </p>
               </div>
             </div>

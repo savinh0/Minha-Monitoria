@@ -11,6 +11,7 @@ export interface Discipline {
 export interface CandidateSubmission {
   id: string;
   disciplineId: string;
+  userId: string;
   candidateName: string;
   isAnonymous: boolean;
   subjectScore: number;
