@@ -283,6 +283,7 @@ export default function Home() {
           disciplines={disciplines}
           submissions={submissions}
           activeDisciplineId={activeDisciplineId}
+          userId={userId}
           onSelectDiscipline={setActiveDisciplineId}
           onOpenSubmitModal={handleOpenStudentModal}
         />
